@@ -3,7 +3,7 @@ import theano.tensor as T
 import numpy as np
 
 # LSTM network
-class LSTM(object):
+class LSTMOR(object):
 		
 	def __init__(self, n_in, n_hidden, n_out):
 		dtype = theano.config.floatX
@@ -67,15 +67,18 @@ class LSTM(object):
 
         #Cost
 		cost = (T.sqr(t - y)).mean() # sigma^2
+		# Negative Log-Likelihood
+			# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
+			# Z = sqrt(2pi * sqrt(2*sigma^2))
+		nll = (T.sqr(t - y)).sum()/(2*cost) + T.log(T.sqrt(2*np.pi*cost))
 		
 		#Updates
-		updates = self.RMSprop(cost, params, learnrate=lr)
+		updates = self.RMSprop(nll, params, learnrate=lr)
 
 		#Theano Functions
 		self.train = theano.function([x, t, lr], cost, 
                                      on_unused_input='warn', 
-                                     updates=updates)
-		#self.validate = theano.function([x, t], [cost, nll])							 
+                                     updates=updates)						 
 		self.predict = theano.function([x], y)	
 		
     #LSTM step

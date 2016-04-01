@@ -4,7 +4,8 @@ import theano.tensor as T
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wave
-from lstmp import LSTM
+from lstmor import LSTMOR
+from lstmp import LSTMP
 from fuel.datasets.youtube_audio import YouTubeAudio
 from fuel.transformers.sequences import Window
 
@@ -19,18 +20,18 @@ learningRate = 0.002 # learning rate
 vals = []
 minError = np.inf
 idx = 0
-iterations = 128
+iterations = 256
 gIterations = 64
 tStartTime = 30
 gStartTime = 1200
 
 # create LSTM
-print("Creating 2-Layer LSTMP...")
-lstm = LSTM(miniBatches, hiddenUnits, miniBatches)
+print("Creating 2-Layer LSTMOR...")
+lstm = LSTMP(miniBatches, hiddenUnits, miniBatches)
 
-# switch to configure training or audio generation
+# switch this to configure training or audio generation
 # 0: generate only; 1: train only; 2: train & generate
-training = 2
+training = 0
 
 if training > 0:
 	# retrive datastream
@@ -51,7 +52,7 @@ if training > 0:
 		if idx>=(tStartTime*freq):
 			[u, t] = np.array(batch_stream, dtype=theano.config.floatX)
 			# do some reshaping magic
-			[uBatch, tBatch] = np.reshape([(u/0x8000), (t/0x8000)], (miniBatches,batchSize)).swapaxes(1,2)
+			[uBatch, tBatch] = np.reshape([(u/0x8000), (t/0x8000)], (2,miniBatches,batchSize)).swapaxes(1,2)
 			# train and find error
 			print("\ntraining...")
 			error  = lstm.train(uBatch, tBatch, learningRate)
@@ -85,7 +86,7 @@ if training != 1:
 	lstm.params = pickle.load(f) #load params from file
 	f.close()
 	start = 0
-	idx = 0
+	idx = 1
 	vals=[]
 	# retrive datastream
 	print("retrieving data...")
@@ -103,19 +104,19 @@ if training != 1:
 		# Start somewhere
 		if idx>=(gStartTime*freq):
 			if start == 0:
-				# get one batch as seed sequence
+				# get N batch as seed sequence
 				u, t = batch_stream
 				u = np.array(u/(0x8000), dtype=theano.config.floatX)		
 				start = 1
 			# do some reshaping magic
 			uBatch = np.reshape(u, (miniBatches, batchSize)).swapaxes(0,1)		
-			# generate 1 new batch of data
+			# generate N batch of data
 			prediction = np.reshape(lstm.predict(uBatch).swapaxes(0,1), u.shape)
+			# drop N-1 batches, keep batch N
 			prediction = prediction[(sequenceSize-stride):]
 			print(prediction, prediction.shape)
 			for item in prediction:
 				vals.append(np.asscalar(item))
-
 			# update u by removing a block from u and appending a block from prediction
 			u = np.append(u[stride:], prediction, axis=0)
 			print ("Iteration:", idx-(gStartTime*freq))	

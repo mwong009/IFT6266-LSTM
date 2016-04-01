@@ -42,8 +42,7 @@ class LSTM(object):
 		W_hp = theano.shared(init_weights(n_hidden, n_p))
 		W_ry = theano.shared(init_weights(n_r, n_out))
 		W_py = theano.shared(init_weights(n_p, n_out))
-
-		
+	
 		#Params
 		params = [W_xi, W_hi, W_ci, W_xf, W_hf, W_cf, 
 				  W_xc, W_hc, W_xo, W_ho, W_co, 
@@ -64,14 +63,18 @@ class LSTM(object):
 		[r, c, y], _ = theano.scan(fn = self.recurrent_fn, sequences = y1, 
 		                     outputs_info  = [r0, c0, None], #corresponds to return type of fn
 		                     non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
-		                     W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
-		                     W_hr, W_hp, W_ry, W_py, b_y])
+		                                      W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
+		                                      W_hr, W_hp, W_ry, W_py, b_y])
 
         #Cost
 		cost = (T.sqr(t - y)).mean()
+		# Negative Log-Likelihood
+			# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
+			# Z = sqrt(2pi * sqrt(2*sigma^2))
+		nll = (T.sqr(t - y)).sum()/(2*cost) + T.log(T.sqrt(2*np.pi*cost))
 		
 		#Updates
-		updates = self.RMSprop(cost, params, learnrate=lr)
+		updates = self.RMSprop(nll, params, learnrate=lr)
 
 		#Theano Functions
 		self.train = theano.function([x, t, lr], cost, 
