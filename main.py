@@ -19,7 +19,7 @@ learningRate = 0.002 # learning rate
 vals = []
 minError = np.inf
 idx = 0
-iterations = 256
+iterations = 128
 gIterations = 64
 tStartTime = 30
 gStartTime = 1200
@@ -54,9 +54,8 @@ if training > 0:
 			[uBatch, tBatch] = np.reshape([(u/0x8000), (t/0x8000)], (miniBatches,batchSize)).swapaxes(1,2)
 			# train and find error
 			print("\ntraining...")
-			[error, nll]  = lstm.train(uBatch, tBatch, learningRate)
+			error  = lstm.train(uBatch, tBatch, learningRate)
 			vals.append(np.asarray(error))
-			print ("Negative Loglikelihood:", nll)
 			print ("Cost:", error, "at iteration:",idx-(tStartTime*freq))			
 			if error<minError:
 				minError = error
