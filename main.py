@@ -4,7 +4,7 @@ import theano.tensor as T
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wave
-from lstm import LSTM
+from lstmp import LSTM
 from fuel.datasets.youtube_audio import YouTubeAudio
 from fuel.transformers.sequences import Window
 
