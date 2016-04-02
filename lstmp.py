@@ -3,7 +3,7 @@ import theano.tensor as T
 import numpy as np
 
 # LSTM network
-class LSTM(object):
+class LSTMP(object):
 		
 	def __init__(self, n_in, n_hidden, n_out):
 		dtype = theano.config.floatX

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wave
 from lstmor import LSTMOR
-from lstmp import LSTMP
+#from lstmp import LSTMP
 from fuel.datasets.youtube_audio import YouTubeAudio
 from fuel.transformers.sequences import Window
 
@@ -23,15 +23,15 @@ idx = 0
 iterations = 256
 gIterations = 64
 tStartTime = 30
-gStartTime = 1200
+gStartTime = 900
 
 # create LSTM
 print("Creating 2-Layer LSTMOR...")
-lstm = LSTMP(miniBatches, hiddenUnits, miniBatches)
+lstm = LSTMOR(miniBatches, hiddenUnits, miniBatches)
 
 # switch this to configure training or audio generation
 # 0: generate only; 1: train only; 2: train & generate
-training = 0
+training = 2
 
 if training > 0:
 	# retrive datastream
