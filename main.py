@@ -23,7 +23,7 @@ idx = 0
 iterations = 256
 gIterations = 64
 tStartTime = 30
-gStartTime = 900
+gStartTime = batchSize/freq*iterations+tStartTime + 60
 
 # create LSTM
 print("Creating 2-Layer LSTMOR...")
@@ -72,6 +72,8 @@ if training > 0:
 	print("Total sequence trained:", (idx-(tStartTime*freq))*(stride/freq), "seconds")
 	# saving and printing
 	plt.plot(vals)
+	plt.xlabel('iterations')
+	plt.ylabel('loss')
 	plt.savefig('LSTM_LOSS_PLOT_SIZE'+str(batchSize)+'_'+str(sequenceSize/freq)+'s_LR'
 	            +str(learningRate)+'_HU'+str(hiddenUnits)+'.png')			
 	f = open('LSTM_LOSS_PLOT_SIZE'+str(batchSize)+'_'+str(sequenceSize/freq)+'s_LR'
