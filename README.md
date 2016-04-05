@@ -2,6 +2,7 @@
 IFT6266 git repository
 
 Vocal Synthesis Project - IFT6266 H16
+*IMPORTANT* this git repo had been recently resetted, therefore changes made before march 31 will not be shown
 
 # Directories
 
