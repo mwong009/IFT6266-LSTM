@@ -19,4 +19,4 @@ convert.sh
 For converting audio.wav to audio.mp4
 
 # Notes
-NLL = - log exp{0.5(x_t-\mu)^2/(2*pi*sigma)}
+NLL = - log exp{0.5(x_t-\mu)^2/(2 * pi * sigma)}
