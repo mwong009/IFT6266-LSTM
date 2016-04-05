@@ -53,7 +53,7 @@ class LSTMOR(object):
 		t = T.matrix()
 		lr = T.scalar()
 		
-		#2-Layer deep LSTM-OR RNN http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=7178816
+		#2-Layer deep LSTMOR http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=7178816
 		[h1, c1, y1], _ = theano.scan(fn = self.recurrent_fn, sequences = x,
                              outputs_info  = [h0, c0, y0], #corresponds to return type of fn
                              non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
@@ -65,7 +65,7 @@ class LSTMOR(object):
 		                     W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
 		                     W_hy, W_yy, b_y])
 
-        #Cost
+                #Cost
 		cost = (T.sqr(t - y)).mean() # sigma^2
 		# Negative Log-Likelihood
 			# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
@@ -81,7 +81,7 @@ class LSTMOR(object):
                                      updates=updates)						 
 		self.predict = theano.function([x], y)	
 		
-    #LSTM step
+        #LSTM step
 	def recurrent_fn(self, x_t, h_tm1, c_tm1, y_tm1,
                      W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
 	                 W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
@@ -96,7 +96,7 @@ class LSTMOR(object):
 		o_t = T.nnet.sigmoid(T.dot(x_t, W_xo) + T.dot(h_tm1, W_ho) + T.dot(c_t, W_co) + b_o)
 		#LSTMemory Block Output
 		h_t = o_t * T.tanh(c_t)
-		#Output                  #Recursion output layer
+		#Output                  #Recursion output
 		y_t = T.dot(h_t, W_hy) + T.dot(y_tm1, W_yy) + b_y		
 		return [h_t, c_t, y_t]
 	
