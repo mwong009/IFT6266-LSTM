@@ -28,18 +28,15 @@ gStartTime = batchSize/freq*iterations+tStartTime + 60
 # create LSTM
 print("Creating 2-Layer LSTMOR...")
 lstm = LSTMOR(miniBatches, hiddenUnits, miniBatches)
-
 # switch this to configure training or audio generation
 # 0: generate only; 1: train only; 2: train & generate
 training = 2
-
 if training > 0:
 	# retrive datastream
 	print("retrieving data...")
 	data = YouTubeAudio('XqaJ2Ol5cC4')
 	stream = data.get_example_stream()
 	data_stream = Window(stride, sequenceSize, sequenceSize, True, stream)
-	
 	print("Input Size:", batchSize)
 	print("minibatches:", miniBatches) 
 	print("stride:", stride)
@@ -54,7 +51,7 @@ if training > 0:
 			# do some reshaping magic
 			[uBatch, tBatch] = np.reshape([(u/0x8000), (t/0x8000)], (2,miniBatches,batchSize)).swapaxes(1,2)
 			# train and find error
-			print("\ntraining...")
+			print("\n training...")
 			error  = lstm.train(uBatch, tBatch, learningRate)
 			vals.append(np.asarray(error))
 			print ("Cost:", error, "at iteration:",idx-(tStartTime*freq))			
@@ -122,13 +119,10 @@ if training != 1:
 			# update u by removing a block from u and appending a block from prediction
 			u = np.append(u[stride:], prediction, axis=0)
 			print ("Iteration:", idx-(gStartTime*freq))	
-			
 		# End somewhere
 		if idx>=(gStartTime*freq+gIterations):break # iterations
 		idx = idx + 1
-		
 	print("Total sequence size generated:", (idx-(gStartTime*freq))*(stride/freq), "seconds")
-	
 	f = open('LSTM_GEN_AUDIO'+str(batchSize)+'_'+str(sequenceSize/freq)+'s_LR'
 	         +str(learningRate)+'_HU'+str(hiddenUnits)+'.pkl', 'wb')
 	pickle.dump(vals, f)
@@ -140,4 +134,3 @@ if training != 1:
 	wave.write('LSTM_GEN_AUDIO'+str(batchSize)+'_'+str(sequenceSize/freq)+'s_LR'
 	         +str(learningRate)+'_HU'+str(hiddenUnits)+'.wav', 
 	         freq, np.asarray(vals, dtype=theano.config.floatX))
-			
