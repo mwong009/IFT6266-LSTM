@@ -54,7 +54,7 @@ class LSTMP(object):
 		t = T.matrix()
 		lr = T.scalar()
 		
-		#2-Layer deep LSTMP RNN http://arxiv.org/abs/1402.1128
+		#2-Layer deep LSTMP http://arxiv.org/abs/1402.1128
 		[r1, c1, y1], _ = theano.scan(fn = self.recurrent_fn, sequences = x,
                              outputs_info  = [r0, c0, None], #corresponds to return type of fn
                              non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
@@ -66,7 +66,7 @@ class LSTMP(object):
 		                                      W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
 		                                      W_hr, W_hp, W_ry, W_py, b_y])
 
-        #Cost
+        	#Cost
 		cost = (T.sqr(t - y)).mean()
 		# Negative Log-Likelihood
 			# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
@@ -82,9 +82,9 @@ class LSTMP(object):
                                      updates=updates)						 
 		self.predict = theano.function([x], y)	
 		
-    #LSTM step
+    	#LSTM step
 	def recurrent_fn(self, x_t, r_tm1, c_tm1, 
-                     W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
+                         W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
 	                 W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
 	                 W_hr, W_hp, W_ry, W_py, b_y):
 		#Input Gate
