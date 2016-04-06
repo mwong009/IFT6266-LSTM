@@ -8,7 +8,6 @@ class LSTMOR(object):
 	def __init__(self, n_in, n_hidden, n_out):
 		dtype = theano.config.floatX
 		n_i = n_f = n_c = n_o = n_hidden
-		n_p = n_r = n_hidden
 		#Init weights	
 		def init_weights(start, end):
 			values = np.random.uniform(low=-0.1, high=0.1, size=(start, end))
@@ -43,8 +42,8 @@ class LSTMOR(object):
 		W_yy = theano.shared(init_weights(n_out, n_out))
 		
 		#Params
-		params = [W_xi, W_hi, W_ci, W_xf, W_hf, W_cf, 
-				  W_xc, W_hc, W_xo, W_ho, W_co, 
+		params = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f,
+				  W_xc, W_hc, b_c, W_xo, W_ho, W_co, b_o,
 				  W_hy, W_yy, b_y, c0]
 		self.params = params
 				
@@ -62,14 +61,14 @@ class LSTMOR(object):
 		[h, c, y], _ = theano.scan(fn = self.recurrent_fn, sequences = y1, 
 		                     outputs_info  = [h0, c0, y0], #corresponds to return type of fn
 		                     non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
-		                     W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
-		                     W_hy, W_yy, b_y])
+		                                      W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
+		                                      W_hy, W_yy, b_y])
 
-                #Cost
+        #Cost
 		cost = (T.sqr(t - y)).mean() # sigma^2
 		# Negative Log-Likelihood
-			# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
-			# Z = sqrt(2pi * sqrt(2*sigma^2))
+		# LL = $\prod 1/Z * exp( -(f(x)-t)^2 / (2*sigma^2) )
+		# Z = sqrt(2pi * sqrt(2*sigma^2))
 		nll = (T.sqr(t - y)).sum()/(2*cost) + T.log(T.sqrt(2*np.pi*cost))
 		
 		#Updates
@@ -81,7 +80,7 @@ class LSTMOR(object):
                                      updates=updates)						 
 		self.predict = theano.function([x], y)	
 		
-        #LSTM step
+    #LSTM step
 	def recurrent_fn(self, x_t, h_tm1, c_tm1, y_tm1,
                      W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
 	                 W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
