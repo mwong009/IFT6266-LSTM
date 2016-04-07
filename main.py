@@ -4,30 +4,31 @@ import theano.tensor as T
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io.wavfile as wave
-from lstmor import LSTMOR
-#from lstmp import LSTMP
+#from lstm import LSTM
+#from lstmor import LSTMOR
+from lstmp import LSTMP
 from fuel.datasets.youtube_audio import YouTubeAudio
 from fuel.transformers.sequences import Window
 
 # hyper parameters
 freq = 16000
-hiddenUnits = 300
-batchSize = 40000   # no. of timesteps
+hiddenUnits = 350
+batchSize = 32000   # no. of timesteps
 stride = batchSize  # window stride
-miniBatches = 40  # batches per iteration
+miniBatches = 8  # batches per iteration
 sequenceSize = batchSize*miniBatches
 learningRate = 0.002 # learning rate
 vals = []
 minError = np.inf
-idx = 0
+idx = 1
 iterations = 256
 gIterations = 64
 tStartTime = 30
-gStartTime = batchSize/freq*iterations+tStartTime + 60
+gStartTime = 900
 
 # create LSTM
-print("Creating 2-Layer LSTMOR...")
-lstm = LSTMOR(miniBatches, hiddenUnits, miniBatches)
+print("Creating 2-Layer LSTMP...")
+lstm = LSTMP(miniBatches, hiddenUnits, miniBatches)
 # switch this to configure training or audio generation
 # 0: generate only; 1: train only; 2: train & generate
 training = 2
@@ -46,7 +47,7 @@ if training > 0:
 	print("iterations:", iterations, ", training begin...")
 	for batch_stream in data_stream.get_epoch_iterator():
 		# Start somewhere (after 1 minute)
-		if idx>=(tStartTime*freq):
+		if idx>=(tStartTime):
 			[u, t] = np.array(batch_stream, dtype=theano.config.floatX)
 			# do some reshaping magic
 			[uBatch, tBatch] = np.reshape([(u/0x8000), (t/0x8000)], (2,miniBatches,batchSize)).swapaxes(1,2)
@@ -54,7 +55,7 @@ if training > 0:
 			print("\n training...")
 			error  = lstm.train(uBatch, tBatch, learningRate)
 			vals.append(np.asarray(error))
-			print ("Cost:", error, "at iteration:",idx-(tStartTime*freq))			
+			print ("Cost:", error, "at iteration:",idx-tStartTime)			
 			if error<minError:
 				minError = error
 				print("LOWEST ERROR:", minError)
@@ -64,9 +65,9 @@ if training > 0:
 				pickle.dump(lstm.params, f)
 				f.close()			
 		# End somewhere
-		if idx>=(tStartTime*freq+iterations): break # iterations
+		if idx>=(tStartTime+iterations): break # iterations
 		idx = idx + 1
-	print("Total sequence trained:", (idx-(tStartTime*freq))*(stride/freq), "seconds")
+	print("Total sequence trained:", (idx-tStartTime)*(stride/freq), "seconds")
 	# saving and printing
 	plt.plot(vals)
 	plt.xlabel('iterations')
@@ -101,9 +102,9 @@ if training != 1:
 	print("iterations:", gIterations, ", generation begin...")
 	for batch_stream in data_stream.get_epoch_iterator():
 		# Start somewhere
-		if idx>=(gStartTime*freq):
+		if idx>=(gStartTime):
 			if start == 0:
-				# get N batch as seed sequence
+				# get 1 batch as seed sequence
 				u, t = batch_stream
 				u = np.array(u/(0x8000), dtype=theano.config.floatX)		
 				start = 1
@@ -112,17 +113,17 @@ if training != 1:
 			# generate N batch of data
 			prediction = np.reshape(lstm.predict(uBatch).swapaxes(0,1), u.shape)
 			# drop N-1 batches, keep batch N
-			prediction = prediction[(sequenceSize-stride):]
+			prediction = prediction[-stride:]
 			print(prediction, prediction.shape)
 			for item in prediction:
 				vals.append(np.asscalar(item))
 			# update u by removing a block from u and appending a block from prediction
 			u = np.append(u[stride:], prediction, axis=0)
-			print ("Iteration:", idx-(gStartTime*freq))	
+			print ("Iteration:", idx-gStartTime)	
 		# End somewhere
-		if idx>=(gStartTime*freq+gIterations):break # iterations
+		if idx>=(gStartTime+gIterations):break # iterations
 		idx = idx + 1
-	print("Total sequence size generated:", (idx-(gStartTime*freq))*(stride/freq), "seconds")
+	print("Total sequence size generated:", (idx-gStartTime)*(stride/freq), "seconds")
 	f = open('LSTM_GEN_AUDIO'+str(batchSize)+'_'+str(sequenceSize/freq)+'s_LR'
 	         +str(learningRate)+'_HU'+str(hiddenUnits)+'.pkl', 'wb')
 	pickle.dump(vals, f)

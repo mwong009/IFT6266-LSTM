@@ -16,24 +16,29 @@ class LSTMP(object):
 		#Init params		
 		c0 = theano.shared(np.zeros((n_hidden,), dtype=dtype))
 		r0 = T.tanh(c0)
+		y0 = theano.shared(np.zeros((n_out,), dtype=dtype))
 		#Input Gate params
 		W_xi = theano.shared(init_weights(n_in, n_i))
 		W_hi = theano.shared(init_weights(n_hidden, n_i))
 		W_ci = theano.shared(init_weights(n_c, n_i))
+		W_yi = theano.shared(init_weights(n_out, n_i))
 		b_i = theano.shared(np.random.uniform(low=-0.1, high=0.1, size=n_i))
 		#Forget Gate params
 		W_xf = theano.shared(init_weights(n_in, n_f))
 		W_hf = theano.shared(init_weights(n_hidden, n_f))
 		W_cf = theano.shared(init_weights(n_c, n_f))
+		W_yf = theano.shared(init_weights(n_out, n_f))
 		b_f = theano.shared(np.random.uniform(low=0., high=1., size=n_f))
 		#Cell params
 		W_xc = theano.shared(init_weights(n_in, n_c))
 		W_hc = theano.shared(init_weights(n_hidden, n_c))
+		W_yc = theano.shared(init_weights(n_out, n_c))
 		b_c = theano.shared(np.zeros(n_c, dtype=dtype))
 		#Output Gate params
 		W_xo = theano.shared(init_weights(n_in, n_o))
 		W_ho = theano.shared(init_weights(n_hidden, n_o))
 		W_co = theano.shared(init_weights(n_c, n_o))
+		W_yo = theano.shared(init_weights(n_out, n_o))
 		b_o = theano.shared(np.random.uniform(low=-0.1, high=0.1, size=n_o))
 		#Output params
 		b_y = theano.shared(np.zeros(n_out, dtype=dtype))		
@@ -44,8 +49,8 @@ class LSTMP(object):
 		W_py = theano.shared(init_weights(n_p, n_out))
 	
 		#Params
-		params = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f,
-				  W_xc, W_hc, b_c, W_xo, W_ho, W_co, b_o,
+		params = [W_xi, W_hi, W_ci, W_yi, b_i, W_xf, W_hf, W_cf, W_yf, b_f,
+				  W_xc, W_hc, W_yc, b_c, W_xo, W_ho, W_co, W_yo, b_o,
 				  W_hr, W_hp, W_ry, W_py, b_y, c0]
 		self.params = params
 				
@@ -54,17 +59,12 @@ class LSTMP(object):
 		t = T.matrix()
 		lr = T.scalar()
 		
-		#2-Layer deep LSTMP http://arxiv.org/abs/1402.1128
-		[r1, c1, y1], _ = theano.scan(fn = self.recurrent_fn, sequences = x,
-                             outputs_info  = [r0, c0, None], #corresponds to return type of fn
-                             non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
-                                              W_xc, W_hc, b_c, W_xo, W_ho, W_co, b_o,
-                                              W_hr, W_hp, W_ry, W_py, b_y])
-		[r, c, y], _ = theano.scan(fn = self.recurrent_fn, sequences = y1, 
-		                     outputs_info  = [r0, c0, None], #corresponds to return type of fn
-		                     non_sequences = [W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
-		                                      W_xc, W_hc, b_c, W_xo, W_ho, W_co, b_o,
-		                                      W_hr, W_hp, W_ry, W_py, b_y])
+		#LSTMP http://arxiv.org/abs/1402.1128
+		[r, c, y], _ = theano.scan(fn = self.recurrent_fn, sequences = x,
+                             outputs_info  = [r0, c0, y0], #corresponds to return type of fn
+                             non_sequences = [W_xi, W_hi, W_ci, W_yi, b_i, W_xf, W_hf, W_cf, W_yf, b_f,
+				                              W_xc, W_hc, W_yc, b_c, W_xo, W_ho, W_co, W_yo, b_o,
+				                              W_hr, W_hp, W_ry, W_py, b_y])
 
         #Cost
 		cost = (T.sqr(t - y)).mean()
@@ -83,18 +83,18 @@ class LSTMP(object):
 		self.predict = theano.function([x], y)	
 		
     #LSTM step
-	def recurrent_fn(self, x_t, r_tm1, c_tm1, 
-                         W_xi, W_hi, W_ci, b_i, W_xf, W_hf, W_cf, b_f, 
-	                     W_xc, W_hc, b_c, W_xo, W_ho, b_o, W_co, 
-	                     W_hr, W_hp, W_ry, W_py, b_y):
+	def recurrent_fn(self, x_t, r_tm1, c_tm1, y_tm1,
+                         W_xi, W_hi, W_ci, W_yi, b_i, W_xf, W_hf, W_cf, W_yf, b_f,
+				         W_xc, W_hc, W_yc, b_c, W_xo, W_ho, W_co, W_yo, b_o,
+				         W_hr, W_hp, W_ry, W_py, b_y):
 		#Input Gate
-		i_t = T.nnet.sigmoid(T.dot(x_t, W_xi) + T.dot(r_tm1, W_hi) + T.dot(c_tm1, W_ci) + b_i)         		
+		i_t = T.nnet.sigmoid(T.dot(x_t, W_xi) + T.dot(y_tm1, W_yi) + T.dot(r_tm1, W_hi) + T.dot(c_tm1, W_ci) + b_i)
 		#Forget Gate
-		f_t = T.nnet.sigmoid(T.dot(x_t, W_xf) + T.dot(r_tm1, W_hf) + T.dot(c_tm1, W_cf) + b_f)		
+		f_t = T.nnet.sigmoid(T.dot(x_t, W_xf) + T.dot(y_tm1, W_yf) + T.dot(r_tm1, W_hf) + T.dot(c_tm1, W_cf) + b_f)		
 		#Cell
-		c_t = f_t * c_tm1 + i_t * T.tanh(T.dot(x_t, W_xc) + T.dot(r_tm1, W_hc) + b_c)
+		c_t = f_t * c_tm1 + i_t * T.tanh(T.dot(x_t, W_xc) + T.dot(y_tm1, W_yc) + T.dot(r_tm1, W_hc) + b_c)
 		#Output Gate
-		o_t = T.nnet.sigmoid(T.dot(x_t, W_xo) + T.dot(r_tm1, W_ho) + T.dot(c_t, W_co) + b_o)
+		o_t = T.nnet.sigmoid(T.dot(x_t, W_xo) + T.dot(y_tm1, W_yo) + T.dot(r_tm1, W_ho) + T.dot(c_t, W_co) + b_o)
 		#LSTMemory Block Output
 		h_t = o_t * T.tanh(c_t)
 		#Recurrent Projection layer
