@@ -1,0 +1,15 @@
+# hyper parameters
+freq = 16000
+hiddenUnits = 300
+batchSize = 40000   
+stride = 40000 
+miniBatches = 40  
+sequenceSize = batchSize*miniBatches
+learningRate = 0.002
+vals = []
+minError = np.inf
+idx = 0
+iterations = 128
+gIterations = 64
+tStartTime = 30
+gStartTime = 1200
