@@ -10,10 +10,10 @@ from fuel.transformers.sequences import Window
 
 # hyper parameters
 freq = 16000
-hiddenUnits = 256
-learningRate = 0.0002 # learning rate
+hiddenUnits = 512
+learningRate = 0.002 # learning rate
 length = 8000   # 0.5 seconds
-features = 160 # RNN input feature size
+features = 240 # RNN input feature size
 
 # create LSTM
 print("Creating 2-Layer LSTM...")
@@ -22,8 +22,8 @@ lstm = LSTMP(features, hiddenUnits, 1)
 # extra parameters
 trainingSize = length*features # training length
 delay = length                 # target delay
-stride = length                # sequence stream stride
-iterations = 1280
+stride = 8000                  # sequence stream stride
+iterations = 256
 gIterations = 256
 t_start = 60
 g_start = 960
@@ -50,6 +50,9 @@ if training > 0:
 	print("iterations: ", iterations)
 	
 	print("training begin...")
+	#Init params crude		
+	c0 = np.random.uniform(low=-0.1, high=0.1, size=(512,))
+	r0 = np.random.uniform(low=-0.1, high=0.1, size=(256,))
 	for batch_stream in data_stream.get_epoch_iterator():
 		idx += 1		
 		[u, t] = np.array(batch_stream, dtype=theano.config.floatX) # get samples
@@ -60,11 +63,11 @@ if training > 0:
 			tBatch = (t[-length:]/0x8000)
 			# train and find error
 			print("\ntraining...")
-			[r, c, output, error]  = lstm.train(uBatch, tBatch, learningRate)
+			[r0, c0, output, error]  = lstm.train(r0, c0, uBatch, tBatch, learningRate)
 			# feedback r0, c0 from previous r_last, c_last
 			# forcing initial y0, c0 to "match" previous training LSTM connections
-			lstm.r0 = theano.shared(np.array(r))
-			lstm.c0 = theano.shared(np.array(c))
+			#lstm.r0 = r0#theano.shared(np.array(r))
+			#lstm.c0 = c0#theano.shared(np.array(c))
 			vals.append(error)
 			print ("Cost:", error, "at iteration:",idx-t_start)	
 			print(output.flatten())		
@@ -75,6 +78,13 @@ if training > 0:
 				f = open('best_model.pkl', 'wb')
 				pickle.dump(lstm.params, f)
 				f.close()	
+			if idx % 5 == 0:
+				plt.plot(vals)
+				plt.savefig('loss.png')	
+				plt.clf()
+				f = open('5_model.pkl', 'wb')
+				pickle.dump(lstm.params, f)
+				f.close()
 		# End somewhere
 		if idx>(t_start+iterations): break
 	print("Total sequence trained:", (idx-t_start)*(stride/freq), "seconds")
@@ -84,7 +94,6 @@ if training > 0:
 	f = open('loss.pkl', 'wb')
 	pickle.dump(vals, f)
 	f.close()
-	
 if training != 1:
 	f = open('best_model.pkl', 'rb') 
 	# load params from file
@@ -103,6 +112,9 @@ if training != 1:
 	print("iterations: ", gIterations)
 	
 	print("generation begin...")
+	#Init params crude		
+	c0 = np.random.uniform(low=-0.1, high=0.1, size=(512,))
+	r0 = np.random.uniform(low=-0.1, high=0.1, size=(256,))
 	for batch_stream in data_stream.get_epoch_iterator():
 		idx += 1
 		if idx > g_start:
@@ -115,12 +127,12 @@ if training != 1:
 			uBatch = np.reshape((u/0x8000), (features,length)).swapaxes(0,1)
 			
 			# generate 1 new batch of data
-			[r, c, prediction] = lstm.predict(uBatch)
+			[r0, c0, prediction] = lstm.predict(r0, c0, uBatch)
 			# feedback r0, c0 from previous r_last, c_last
 			# forcing initial y0, c0 to "match" previous training LSTM connections
-			lstm.r0 = theano.shared(np.array(r))
-			lstm.c0 = theano.shared(np.array(c))
-			#print(r.shape, c.shape)
+			#lstm.r0 = theano.shared(np.array(r))
+			#lstm.c0 = theano.shared(np.array(c))
+			##print(r.shape, c.shape)
 			print(prediction.flatten(), prediction.shape)
 			for item in prediction.flatten():
 				vals.append(np.asscalar(item))

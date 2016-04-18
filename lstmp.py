@@ -9,14 +9,14 @@ class LSTMP(object):
 		dtype = theano.config.floatX
 		n_i = n_f = n_c = n_o = n_hidden
 		n_p = n_hidden
-		n_r = 128
+		n_r = 256
 		#Init weights	
 		def init_weights(start, end):
 			values = np.random.uniform(low=-0.1, high=0.1, size=(start, end))
 			return values
 		#Init params		
-		c0 = theano.shared(np.zeros((n_c,), dtype=dtype))
-		r0 = theano.shared(np.zeros((n_r,), dtype=dtype))
+		#c0 = theano.shared(np.random.uniform(low=-0.1, high=0.1, size=n_c))
+		#r0 = theano.shared(np.random.uniform(low=-0.1, high=0.1, size=n_r))
 		#Input Gate params
 		W_xi = theano.shared(init_weights(n_in, n_i))
 		W_hi = theano.shared(init_weights(n_r, n_i))
@@ -50,10 +50,11 @@ class LSTMP(object):
 		self.params = params
 				
 		#Tensor variables
+		r0 = T.vector()
+		c0 = T.vector()
 		x = T.matrix()
 		t = T.matrix()
 		lr = T.scalar()
-		
 		#LSTM http://arxiv.org/abs/1402.1128
 		[r, c, z], _ = theano.scan(fn = self.recurrent_fn, sequences = x,
                              outputs_info  = [r0, c0, None], #corresponds to return type of fn
@@ -69,13 +70,13 @@ class LSTMP(object):
 		nll = (T.sqr(t - z)).sum()/(2*cost) + T.log(T.sqrt(2*np.pi*cost))
 		
 		#Updates
-		updates = self.RMSprop(nll, params, learnrate=lr)
+		updates = self.RMSprop(cost, params, learnrate=lr)
 
 		#Theano Functions
-		self.train = theano.function([x, t, lr], [r[-1], c[-1], z, cost], 
+		self.train = theano.function([r0, c0, x, t, lr], [r[-1], c[-1], z, cost], 
                                      on_unused_input='warn', 
                                      updates=updates)						 
-		self.predict = theano.function([x], [r, c, z])	
+		self.predict = theano.function([r0, c0, x], [r[-1], c[-1], z])	
 		
     #LSTM step
 	def recurrent_fn(self, x_t, r_tm1, c_tm1,
